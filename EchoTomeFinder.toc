@@ -2,7 +2,7 @@
 ## Title: EchoTomeFinder
 ## Notes: Highlights Echo Tomes in your bags and loot rolls, and tells which of your characters want them in their saved builds.
 ## Author: faroke
-## Version: 2.1.0
+## Version: 2.2.0
 ## X-Website: https://github.com/faroke/EchoTomeFinder
 ## OptionalDeps: ProjectEbonhold
 ## SavedVariables: EchoTomeFinderDB

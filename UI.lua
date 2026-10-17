@@ -305,16 +305,19 @@ local function BuildOptions(page)
         CreateCheck(page, -68, "Include my other characters",
             function() return db().alts end,
             function(v) db().alts = v Core.RefreshAll() end),
-        CreateCheck(page, -96, "Include local loadouts of other classes",
+        CreateCheck(page, -96, "Include Echo Wishlists",
+            function() return db().wishlists end,
+            function(v) db().wishlists = v Core.RefreshAll() end),
+        CreateCheck(page, -124, "Include local loadouts of other classes",
             function() return db().allClasses end,
             function(v) db().allClasses = v Core.SaveSnapshot() Core.RefreshAll() end),
-        CreateCheck(page, -124, "Show minimap button",
+        CreateCheck(page, -152, "Show minimap button",
             function() return not db().minimap.hide end,
             function(v) db().minimap.hide = not v ns.UpdateMinimapButton() end),
     }
 
     page.langLabel = page:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    page.langLabel:SetPoint("TOPLEFT", 20, -162)
+    page.langLabel:SetPoint("TOPLEFT", 20, -190)
     local x = 120
     for _, lang in ipairs({ { "en", "English" }, { "fr", "Français" } }) do
         local b = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
@@ -330,7 +333,7 @@ local function BuildOptions(page)
     end
 
     page.legend = page:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    page.legend:SetPoint("TOPLEFT", 20, -200)
+    page.legend:SetPoint("TOPLEFT", 20, -228)
     page.legend:SetPoint("RIGHT", page, "RIGHT", -20, 0)
     page.legend:SetJustifyH("LEFT")
     page.legend:SetSpacing(4)

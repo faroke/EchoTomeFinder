@@ -15,10 +15,10 @@ It spots the **Echo Tomes** in your bags and in group loot rolls, and tells you 
 - **Window and minimap button**: click the book icon on the minimap (drag it to move it) to open a window with three tabs:
   - **Tomes**: the tomes in your bags and who wants them (shift-click links one in chat);
   - **Characters**: recorded characters, click a color square to change its color, or remove a character;
-  - **Options**: sound, chat messages, other characters, minimap button, language.
+  - **Options**: sound, chat messages, other characters, Echo Wishlists, minimap button, language.
 - Tomes a character has **already learned** are not counted for that character.
 
-Builds come from the Echo Journal's **Loadouts** tab: server build slots (snapshots and wishlists) and the local loadout library.
+Builds come from the Echo Journal's **Loadouts** tab. By default only your saved builds (server snapshots) count. **Echo Wishlists** (designed builds) and the local loadout library can be included with the *Include Echo Wishlists* option; their names then show with a *(wishlist)* tag.
 
 ## Installation
 
@@ -39,6 +39,7 @@ Builds come from the Echo Journal's **Loadouts** tab: server build slots (snapsh
 | `/etf alts` | Include or ignore other characters' builds |
 | `/etf builds` | List the logged-in character's builds |
 | `/etf sound` | Toggle the alert sound |
+| `/etf wishlists` | Include or ignore Echo Wishlists (off by default) |
 | `/etf classes` | Include local loadouts made for other classes |
 | `/etf lang <en\|fr>` | Change the language (English or French) |
 

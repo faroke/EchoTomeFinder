@@ -23,6 +23,7 @@ local defaults = {
     allClasses = false, -- include local builds of other classes
     alts = true,        -- take other characters' builds into account
     chat = true,        -- chat lines for wanted tomes
+    wishlists = false,  -- also count Echo Wishlists (designed builds)
 }
 
 local db
@@ -105,18 +106,26 @@ local function AddToIndex(index, spellId, label)
     end
 end
 
+-- Saved builds (server snapshots, verified) go to `index`; Echo Wishlists
+-- (designed server builds, verified == false) and the local loadout library
+-- go to `wishIndex`, only used when the wishlist option is on.
 local function BuildProfileIndex()
-    local index, count = {}, 0
+    local index, wishIndex, count = {}, {}, 0
     local svc = Perks()
-    if not svc then return index, count end
+    if not svc then return index, wishIndex, count end
 
     local slots = svc.GetServerBuildSlots and svc.GetServerBuildSlots()
     if slots then
         for slot, build in pairs(slots) do
             count = count + 1
             local label = (build.name ~= "" and build.name) or string.format(L("Slot %d"), slot)
+            local target = index
+            if build.verified == false then
+                target = wishIndex
+                label = label .. " " .. L("(wishlist)")
+            end
             for _, e in ipairs(build.echoes or {}) do
-                AddToIndex(index, e.spellId, label)
+                AddToIndex(target, e.spellId, label)
             end
         end
     end
@@ -126,16 +135,16 @@ local function BuildProfileIndex()
     for _, loadout in ipairs(library or {}) do
         if db.allClasses or not loadout.class or loadout.class == myClass then
             count = count + 1
-            local label = loadout.name or "?"
+            local label = (loadout.name or "?") .. " " .. L("(wishlist)")
             if loadout.class and loadout.class ~= myClass then
                 label = label .. " (" .. loadout.class .. ")"
             end
             for _, e in ipairs(loadout.echoes or {}) do
-                AddToIndex(index, e.spellId, label)
+                AddToIndex(wishIndex, e.spellId, label)
             end
         end
     end
-    return index, count
+    return index, wishIndex, count
 end
 
 -- Memo for WhoWants, cleared whenever builds or learned echoes may have changed
@@ -152,7 +161,7 @@ local function SaveSnapshot()
     if not (db and svc) then return end
     if svc.GetServerBuildSlots and svc.GetServerBuildSlots() == nil then return end
 
-    local index, count = BuildProfileIndex()
+    local index, wishIndex, count = BuildProfileIndex()
     local learned = {}
     for id in pairs((svc.GetDiscoveredEchoes and svc.GetDiscoveredEchoes()) or {}) do
         learned[id] = true
@@ -162,6 +171,7 @@ local function SaveSnapshot()
         name = UnitName("player"),
         class = class,
         index = index,
+        wishIndex = wishIndex,
         builds = count,
         learned = learned,
         updated = time(),
@@ -205,6 +215,11 @@ local function WhoWants(echoId)
     for key, char in pairs(db.chars) do
         if key == myKey or db.alts then
             local profiles = ProfilesIn(char.index, echoId)
+            if db.wishlists then
+                for _, label in ipairs(ProfilesIn(char.wishIndex, echoId)) do
+                    table.insert(profiles, label)
+                end
+            end
             if #profiles > 0 and not GetCharLearned(key)[echoId] then
                 table.insert(list, { key = key, name = char.name or key, profiles = profiles })
             end
@@ -620,7 +635,8 @@ local function ListBuilds()
         for slot, build in pairs(slots) do
             n = n + 1
             Print(string.format(L("server #%d %s (%d echoes)"), slot,
-                build.name ~= "" and build.name or L("unnamed"), #(build.echoes or {})))
+                build.name ~= "" and build.name or L("unnamed"), #(build.echoes or {}))
+                .. (build.verified == false and (" " .. L("(wishlist)")) or ""))
         end
     else
         Print(L("server builds not received yet, request sent again."))
@@ -661,6 +677,7 @@ local function PrintHelp()
     Print(L("/etf alts: include or ignore other characters"))
     Print(L("/etf builds: list the logged-in character's builds"))
     Print(L("/etf sound: toggle the alert sound"))
+    Print(L("/etf wishlists: include or ignore Echo Wishlists"))
     Print(L("/etf classes: include local builds of other classes"))
     Print(L("/etf lang <en|fr>: change the language"))
 end
@@ -724,6 +741,10 @@ SlashCmdList["ECHOTOMEFINDER"] = function(msg)
     elseif cmd == "sound" then
         db.sound = not db.sound
         Print(db.sound and L("alert sound enabled.") or L("alert sound disabled."))
+    elseif cmd == "wishlists" then
+        db.wishlists = not db.wishlists
+        Print(db.wishlists and L("Echo Wishlists included.") or L("Echo Wishlists ignored."))
+        RefreshAll()
     elseif cmd == "classes" then
         db.allClasses = not db.allClasses
         Print(db.allClasses and L("local builds of other classes included.")
