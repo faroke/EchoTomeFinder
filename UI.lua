@@ -127,7 +127,9 @@ local function RefreshTomes()
         local row = TomeRow(scroll, i)
         RowBackground(row, i)
         row.link = t.link
-        row.icon:SetTexture(t.texture or [[Interface\Icons\INV_Misc_QuestionMark]])
+        -- The echo's own icon says more than the generic tome book
+        local _, _, echoIcon = GetSpellInfo(t.echoId)
+        row.icon:SetTexture(echoIcon or t.texture or [[Interface\Icons\INV_Misc_QuestionMark]])
         row.name:SetText(t.name)
         row.count:SetText(t.count > 1 and ("x" .. t.count) or "")
         local mine = #t.wanters > 0 and t.wanters[1].key == myKey
