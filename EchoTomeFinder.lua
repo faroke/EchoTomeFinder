@@ -232,8 +232,10 @@ local function DescribeWanters(wanters)
 end
 
 -- ── Highlight ────────────────────────────────────────────────────────────────
--- Pulsing border in the color of the first interested character; a number
--- shows how many characters want the tome when there is more than one.
+-- Border in the color of the first interested character; a number shows how
+-- many characters want the tome when there is more than one.
+--   * wanted by the logged-in character: bright pulsing border + star icon
+--   * wanted only by other characters: faint, still border
 
 local function SetGlow(button, wanters)
     local glow = button.EchoTomeFinderGlow
@@ -268,18 +270,33 @@ local function SetGlow(button, wanters)
         badge:SetAllPoints(button)
         badge.text = badge:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
         badge.text:SetPoint("TOPLEFT", 2, -2)
+        badge.star = badge:CreateTexture(nil, "OVERLAY")
+        badge.star:SetTexture([[Interface\TargetingFrame\UI-RaidTargetingIcon_1]])
+        badge.star:SetWidth(14)
+        badge.star:SetHeight(14)
+        badge.star:SetPoint("TOPRIGHT", 2, 2)
         glow.badge = badge
         button.EchoTomeFinderGlow = glow
     end
     local c = CharColor(wanters[1].key)
     glow.tex:SetVertexColor(c.r, c.g, c.b)
     glow:Show()
-    if not glow.anim:IsPlaying() then glow.anim:Play() end
+    -- WhoWants puts the logged-in character first
+    local mine = wanters[1].key == myKey
+    if mine then
+        glow:SetAlpha(1)
+        if not glow.anim:IsPlaying() then glow.anim:Play() end
+        glow.badge.star:Show()
+    else
+        glow.anim:Stop()
+        glow:SetAlpha(0.35)
+        glow.badge.star:Hide()
+    end
+    glow.badge:Show()
     if #wanters > 1 then
         glow.badge.text:SetText(#wanters)
-        glow.badge:Show()
     else
-        glow.badge:Hide()
+        glow.badge.text:SetText("")
     end
 end
 
@@ -349,8 +366,11 @@ end)
 
 -- ── Alerts ───────────────────────────────────────────────────────────────────
 
+-- Sound and on-screen warning only when the logged-in character wants the
+-- tome; for other characters a chat line is enough.
 local function Alert(title, link, echoId, wanters)
     Print("|cff20ff20" .. title .. "|r " .. link .. " -> " .. DescribeWanters(wanters))
+    if wanters[1].key ~= myKey then return end
     if firstScanDone then
         local names = {}
         for _, w in ipairs(wanters) do table.insert(names, Colorize(w.key, w.name)) end
