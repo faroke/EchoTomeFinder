@@ -42,7 +42,7 @@ Builds come from the Echo Journal's **Loadouts** tab. By default only your saved
 | `/etf sound` | Toggle the alert sound |
 | `/etf wishlists` | Include or ignore Echo Wishlists (off by default) |
 | `/etf classes` | Include local loadouts made for other classes |
-| `/etf lang <en\|fr>` | Change the language (English or French) |
+| `/etf lang <en\|fr>` | Change the language (English or French), also in the Options tab. The zip you downloaded only sets the starting language |
 
 `/tomes` works as an alias for `/etf`.
 
