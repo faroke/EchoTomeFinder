@@ -23,7 +23,7 @@ Builds come from the Echo Journal's **Loadouts** tab. By default only your saved
 
 ## Installation
 
-1. Download the zip for your language from the [Releases](https://github.com/faroke/EchoTomeFinder/releases) page: `EchoTomeFinder-<version>-en.zip` (English) or `EchoTomeFinder-<version>-fr.zip` (French). You can switch language later with `/etf lang`.
+1. Download `EchoTomeFinder-<version>.zip` from the [Releases](https://github.com/faroke/EchoTomeFinder/releases) page. The addon is in English; French is available in the Options tab or with `/etf lang fr`.
 2. Extract it into `Interface/AddOns/` of your Ebonhold client, so you get `Interface/AddOns/EchoTomeFinder/`.
 3. Restart the game and enable **EchoTomeFinder** in the AddOns list.
 4. Log in once on each character you want to track, so its builds and bags get recorded, and open its bank once so the bank is recorded too.
@@ -42,7 +42,7 @@ Builds come from the Echo Journal's **Loadouts** tab. By default only your saved
 | `/etf sound` | Toggle the alert sound |
 | `/etf wishlists` | Include or ignore Echo Wishlists (off by default) |
 | `/etf classes` | Include local loadouts made for other classes |
-| `/etf lang <en\|fr>` | Change the language (English or French), also in the Options tab. The zip you downloaded only sets the starting language |
+| `/etf lang <en\|fr>` | Change the language (English or French), also in the Options tab |
 
 `/tomes` works as an alias for `/etf`.
 
@@ -58,16 +58,16 @@ Settings and recorded characters are stored account-wide in `EchoTomeFinderDB`.
 python build.py
 ```
 
-Creates one zip per language in `dist/`. The builds only differ by their default language and the description shown in the AddOns list.
+Creates the release zip in `dist/`.
 
-GitHub Actions runs the same build on every push (zips available as a workflow artifact). To publish a release, bump `## Version:` in `EchoTomeFinder.toc`, commit, then push a matching tag:
+GitHub Actions runs the same build on every push (zip available as a workflow artifact). To publish a release, bump `## Version:` in `EchoTomeFinder.toc`, commit, then push a matching tag:
 
 ```
 git tag v2.4.0
 git push origin v2.4.0
 ```
 
-The workflow checks that the tag matches the `.toc` version and publishes the release with both zips.
+The workflow checks that the tag matches the `.toc` version and publishes the release with the zip.
 
 ## License
 

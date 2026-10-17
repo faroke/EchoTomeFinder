@@ -889,12 +889,11 @@ f:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == "EchoTomeFinder" then
         EchoTomeFinderDB = EchoTomeFinderDB or {}
         db = EchoTomeFinderDB
-        -- Language: a language build (build.py) sets ns.DefaultLanguage.
-        -- Otherwise French client -> French; data from 1.x (French-only
-        -- versions) also means French, so existing users keep their language.
+        -- Language: English by default, French from the Options tab or
+        -- /etf lang fr. Data from 1.x (French-only versions) means French,
+        -- so existing users keep their language.
         if db.lang == nil then
-            db.lang = ns.DefaultLanguage
-                or ((GetLocale() == "frFR" or db.chars ~= nil or db.sound ~= nil) and "fr" or "en")
+            db.lang = (db.chars ~= nil or db.sound ~= nil) and "fr" or "en"
         end
         for k, v in pairs(defaults) do
             if db[k] == nil then db[k] = v end
