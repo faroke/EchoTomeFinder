@@ -60,6 +60,15 @@ python build.py
 
 Creates one zip per language in `dist/`. The builds only differ by their default language and the description shown in the AddOns list.
 
+GitHub Actions runs the same build on every push (zips available as a workflow artifact). To publish a release, bump `## Version:` in `EchoTomeFinder.toc`, commit, then push a matching tag:
+
+```
+git tag v2.4.0
+git push origin v2.4.0
+```
+
+The workflow checks that the tag matches the `.toc` version and publishes the release with both zips.
+
 ## License
 
 [MIT](LICENSE)
