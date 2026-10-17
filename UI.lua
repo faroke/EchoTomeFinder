@@ -72,18 +72,20 @@ end
 
 -- ── Tomes tab ────────────────────────────────────────────────────────────────
 
+local TOME_ROW_H = 40
+
 local function TomeRow(scroll, i)
     local row = scroll.rows[i]
     if row then return row end
     row = CreateFrame("Button", nil, scroll.content)
-    row:SetHeight(ROW_H)
-    row:SetPoint("TOPLEFT", 0, -(i - 1) * ROW_H)
+    row:SetHeight(TOME_ROW_H)
+    row:SetPoint("TOPLEFT", 0, -(i - 1) * TOME_ROW_H)
     row:SetPoint("RIGHT", scroll.content, "RIGHT")
     row:SetHighlightTexture([[Interface\QuestFrame\UI-QuestTitleHighlight]], "ADD")
 
     row.icon = row:CreateTexture(nil, "ARTWORK")
-    row.icon:SetWidth(ROW_H - 4)
-    row.icon:SetHeight(ROW_H - 4)
+    row.icon:SetWidth(TOME_ROW_H - 6)
+    row.icon:SetHeight(TOME_ROW_H - 6)
     row.icon:SetPoint("LEFT", 2, 0)
     row.star = row:CreateTexture(nil, "OVERLAY")
     row.star:SetTexture([[Interface\TargetingFrame\UI-RaidTargetingIcon_1]])
@@ -91,47 +93,59 @@ local function TomeRow(scroll, i)
     row.star:SetHeight(12)
     row.star:SetPoint("TOPRIGHT", row.icon, "TOPRIGHT", 4, 4)
 
+    -- Left column: echo name + total, then who holds it and where
     row.name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    row.name:SetPoint("TOPLEFT", row.icon, "TOPRIGHT", 6, 0)
-    row.name:SetWidth(150)
+    row.name:SetPoint("TOPLEFT", row.icon, "TOPRIGHT", 6, -2)
+    row.name:SetWidth(205)
+    row.name:SetHeight(14)
     row.name:SetJustifyH("LEFT")
-    row.count = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    row.count:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMRIGHT", 6, 0)
+    row.places = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    row.places:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMRIGHT", 6, 2)
+    row.places:SetWidth(205)
+    row.places:SetHeight(12)
+    row.places:SetJustifyH("LEFT")
 
+    -- Right column: who wants it
     row.who = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    row.who:SetPoint("LEFT", row, "LEFT", 190, 0)
+    row.who:SetPoint("LEFT", row, "LEFT", 252, 0)
     row.who:SetPoint("RIGHT", row, "RIGHT", -4, 0)
     row.who:SetJustifyH("LEFT")
-    row.who:SetHeight(ROW_H)
+    row.who:SetHeight(TOME_ROW_H)
 
     row:SetScript("OnEnter", function(self)
-        if not self.link then return end
+        if not self.tome then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetHyperlink(self.link)
+        GameTooltip:SetHyperlink(self.tome.link)
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine(L("In stock:"), 1, 0.82, 0)
+        for _, p in ipairs(self.tome.places) do
+            local c = Core.CharColor(p.key)
+            GameTooltip:AddDoubleLine("  " .. p.name, L(p.where) .. " x" .. p.count, c.r, c.g, c.b, 1, 1, 1)
+        end
         GameTooltip:Show()
     end)
     row:SetScript("OnLeave", function() GameTooltip:Hide() end)
     -- Shift-click links the tome in chat, ctrl-click previews it
     row:SetScript("OnClick", function(self)
-        if self.link then HandleModifiedItemClick(self.link) end
+        if self.tome then HandleModifiedItemClick(self.tome.link) end
     end)
     scroll.rows[i] = row
     return row
 end
 
+-- Every tome of every character (bags and banks)
 local function RefreshTomes()
     local scroll = pages[1].scroll
-    local tomes = Core.GetTomes()
+    local tomes = Core.GetStock()
     local myKey = Core.GetMyKey()
     for i, t in ipairs(tomes) do
         local row = TomeRow(scroll, i)
         RowBackground(row, i)
-        row.link = t.link
+        row.tome = t
         -- The echo's own icon says more than the generic tome book
-        local _, _, echoIcon = GetSpellInfo(t.echoId)
-        row.icon:SetTexture(echoIcon or t.texture or [[Interface\Icons\INV_Misc_QuestionMark]])
-        row.name:SetText(t.name)
-        row.count:SetText(t.count > 1 and ("x" .. t.count) or "")
+        row.icon:SetTexture(t.icon or [[Interface\Icons\INV_Misc_QuestionMark]])
+        row.name:SetText(t.name .. (t.total > 1 and (" |cffffd100x" .. t.total .. "|r") or ""))
+        row.places:SetText(Core.DescribePlaces(t))
         local mine = #t.wanters > 0 and t.wanters[1].key == myKey
         SetShown(row.star, mine)
         row.icon:SetAlpha(#t.wanters > 0 and 1 or 0.4)
@@ -147,8 +161,8 @@ local function RefreshTomes()
         row:Show()
     end
     for i = #tomes + 1, #scroll.rows do scroll.rows[i]:Hide() end
-    scroll.content:SetHeight(math.max(1, #tomes * ROW_H))
-    scroll.empty:SetText(#tomes == 0 and L("no Echo Tome in your bags.") or "")
+    scroll.content:SetHeight(math.max(1, #tomes * TOME_ROW_H))
+    scroll.empty:SetText(#tomes == 0 and L("no Echo Tome in stock.") or "")
 end
 
 -- ── Characters tab ───────────────────────────────────────────────────────────
@@ -185,6 +199,7 @@ StaticPopupDialogs["ECHOTOMEFINDER_FORGET"] = {
         local db = Core.GetDB()
         db.chars[key] = nil
         db.colors[key] = nil
+        db.stock[key] = nil
         Core.RefreshAll()
     end,
     timeout = 0,

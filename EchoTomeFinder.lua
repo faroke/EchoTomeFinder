@@ -27,7 +27,6 @@ local defaults = {
 }
 
 local db
-local tomesInBags = {}   -- [itemId] = { echoId, link, name, count, wanters }
 local alerted = {}       -- [itemId] = true, already announced this session
 local firstScanDone = false
 local requestedSlots = false
@@ -380,6 +379,14 @@ hooksecurefunc("ContainerFrame_Update", function(frame)
     end
 end)
 
+if BankFrameItemButton_Update then
+    hooksecurefunc("BankFrameItemButton_Update", function(button)
+        if button and not button.isBag then
+            UpdateButton(button, BANK_CONTAINER or -1, button:GetID())
+        end
+    end)
+end
+
 -- ── Alerts ───────────────────────────────────────────────────────────────────
 
 -- Sound and on-screen warning only when the logged-in character wants the
@@ -466,6 +473,120 @@ local function DescribeTome(t)
     return line
 end
 
+-- ── Stock (bags and bank of every character) ────────────────────────────────
+-- db.stock[charKey] = { name, class, bags = { [itemId] = count },
+--                       bank = { [itemId] = count }, bankUpdated = time }
+-- Bags are refreshed on every scan, the bank each time it is opened.
+
+local bankOpen = false
+local BANK_BAGS = { BANK_CONTAINER or -1 }
+for i = NUM_BAG_SLOTS + 1, NUM_BAG_SLOTS + NUM_BANKBAGSLOTS do
+    table.insert(BANK_BAGS, i)
+end
+
+local function GetStockEntry(key)
+    local e = db.stock[key]
+    if not e then
+        e = { bags = {}, bank = {} }
+        db.stock[key] = e
+    end
+    if key == myKey then
+        e.name = UnitName("player")
+        e.class = select(2, UnitClass("player"))
+    end
+    return e
+end
+
+local function CountTomes(bags)
+    local counts = {}
+    for _, bag in ipairs(bags) do
+        for slot = 1, GetContainerNumSlots(bag) do
+            local itemId = ItemIdFromLink(GetContainerItemLink(bag, slot))
+            if GetEchoForItem(itemId) then
+                local _, count = GetContainerItemInfo(bag, slot)
+                counts[itemId] = (counts[itemId] or 0) + (count or 1)
+            end
+        end
+    end
+    return counts
+end
+
+local function ScanBank()
+    if not (db and bankOpen and ProjectEbonhold and ProjectEbonhold.PerkDatabase) then return end
+    local e = GetStockEntry(myKey)
+    e.bank = CountTomes(BANK_BAGS)
+    e.bankUpdated = time()
+end
+
+local function StockOwnerName(key)
+    local e = db.stock[key]
+    local c = db.chars[key]
+    return (c and c.name) or (e and e.name) or key
+end
+
+-- Every tome held by any character, merged by item:
+-- { itemId, echoId, link, name, icon, total, places = { {key, where, count} }, wanters }
+local function GetStock()
+    local byItem, list = {}, {}
+    for key, e in pairs(db.stock) do
+        for _, where in ipairs({ "bags", "bank" }) do
+            for itemId, count in pairs(e[where] or {}) do
+                local echoId = GetEchoForItem(itemId)
+                if echoId then
+                    local t = byItem[itemId]
+                    if not t then
+                        local name, _, icon = GetSpellInfo(echoId)
+                        t = {
+                            itemId = itemId,
+                            echoId = echoId,
+                            link = select(2, GetItemInfo(itemId)) or ("item:" .. itemId),
+                            name = name or ("Echo " .. echoId),
+                            icon = icon or GetItemIcon(itemId),
+                            total = 0,
+                            places = {},
+                            wanters = WhoWants(echoId),
+                        }
+                        byItem[itemId] = t
+                        table.insert(list, t)
+                    end
+                    t.total = t.total + count
+                    table.insert(t.places, { key = key, name = StockOwnerName(key), where = where, count = count })
+                end
+            end
+        end
+    end
+    for _, t in ipairs(list) do
+        table.sort(t.places, function(a, b)
+            if (a.key == myKey) ~= (b.key == myKey) then return a.key == myKey end
+            if a.name ~= b.name then return a.name < b.name end
+            return a.where == "bags" and b.where ~= "bags"
+        end)
+    end
+    table.sort(list, function(a, b)
+        if (#a.wanters > 0) ~= (#b.wanters > 0) then return #a.wanters > 0 end
+        return a.name < b.name
+    end)
+    return list
+end
+
+-- "Faroke: bags x2, bank x1 - Farokke: bank x1"
+local function DescribePlaces(t)
+    local parts, current, currentKey = {}, nil, nil
+    for _, p in ipairs(t.places) do
+        local piece = L(p.where) .. " x" .. p.count
+        if p.key ~= currentKey then
+            current = { Colorize(p.key, p.name) .. ": " .. piece }
+            currentKey = p.key
+            table.insert(parts, current)
+        else
+            current[1] = current[1] .. ", " .. piece
+        end
+    end
+    local out = {}
+    for _, part in ipairs(parts) do table.insert(out, part[1]) end
+    return table.concat(out, " - ")
+end
+
 local function ScanBags()
     if not (db and ProjectEbonhold and ProjectEbonhold.PerkDatabase) then return end
     -- Using a tome changes the learned echoes: start from an empty memo
@@ -509,7 +630,10 @@ local function ScanBags()
         if not found[itemId] then alerted[itemId] = nil end
     end
 
-    tomesInBags = found
+    local entry = GetStockEntry(myKey)
+    entry.bags = {}
+    for itemId, t in pairs(found) do entry.bags[itemId] = t.count end
+    ScanBank()
     RefreshHighlights()
 
     for i, t in ipairs(newMatches) do
@@ -551,15 +675,8 @@ ns.L = function(s) return L(s) end
 ns.Core = {
     GetDB = function() return db end,
     GetMyKey = function() return myKey end,
-    GetTomes = function()
-        local list = {}
-        for _, t in pairs(tomesInBags) do table.insert(list, t) end
-        table.sort(list, function(a, b)
-            if (#a.wanters > 0) ~= (#b.wanters > 0) then return #a.wanters > 0 end
-            return a.name < b.name
-        end)
-        return list
-    end,
+    GetStock = function() return GetStock() end,
+    DescribePlaces = function(t) return DescribePlaces(t) end,
     CharColor = function(key) return CharColor(key) end,
     Colorize = function(key, text) return Colorize(key, text) end,
     RefreshAll = function() RefreshAll() end,
@@ -607,19 +724,15 @@ end
 
 local function ListTomes()
     ScanBags()
-    local list = {}
-    for _, t in pairs(tomesInBags) do table.insert(list, t) end
+    local list = GetStock()
     if #list == 0 then
-        Print(L("no Echo Tome in your bags."))
+        Print(L("no Echo Tome in stock."))
         return
     end
-    table.sort(list, function(a, b)
-        if (#a.wanters > 0) ~= (#b.wanters > 0) then return #a.wanters > 0 end
-        return a.name < b.name
-    end)
-    Print(string.format(L("%d Echo Tome(s) in your bags:"), #list))
+    Print(string.format(L("%d Echo Tome(s) in stock (bags and banks):"), #list))
     for _, t in ipairs(list) do
-        DEFAULT_CHAT_FRAME:AddMessage("  " .. DescribeTome(t))
+        local who = #t.wanters > 0 and DescribeWanters(t.wanters) or ("|cff999999" .. L("no character") .. "|r")
+        DEFAULT_CHAT_FRAME:AddMessage("  " .. t.link .. " x" .. t.total .. " [" .. DescribePlaces(t) .. "] -> " .. who)
     end
 end
 
@@ -670,7 +783,7 @@ end
 
 local function PrintHelp()
     Print(L("/etf: open the window"))
-    Print(L("/etf list: list tomes in your bags and who wants them"))
+    Print(L("/etf list: list your tomes (all characters, bags and banks) and who wants them"))
     Print(L("/etf chars: list recorded characters and their color"))
     Print(L("/etf color <Name> <rrggbb|reset>: change a character's color"))
     Print(L("/etf forget <Name>: remove a character"))
@@ -730,6 +843,7 @@ SlashCmdList["ECHOTOMEFINDER"] = function(msg)
             return
         end
         db.chars[key] = nil
+        db.stock[key] = nil
         db.colors[key] = nil
         Print(string.format(key == myKey and L("%s forgotten (recorded again on the next build update).")
             or L("%s forgotten."), char.name))
@@ -768,6 +882,9 @@ f:RegisterEvent("PLAYER_LOGOUT")
 f:RegisterEvent("BAG_UPDATE")
 f:RegisterEvent("START_LOOT_ROLL")
 f:RegisterEvent("CANCEL_LOOT_ROLL")
+f:RegisterEvent("BANKFRAME_OPENED")
+f:RegisterEvent("BANKFRAME_CLOSED")
+f:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
 f:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == "EchoTomeFinder" then
         EchoTomeFinderDB = EchoTomeFinderDB or {}
@@ -783,6 +900,7 @@ f:SetScript("OnEvent", function(self, event, arg1)
         db.chars = db.chars or {}
         db.colors = db.colors or {}
         db.minimap = db.minimap or { angle = 200, hide = false }
+        db.stock = db.stock or {}
         myKey = CharKey()
         if ns.OnLoaded then ns.OnLoaded() end
 
@@ -830,5 +948,12 @@ f:SetScript("OnEvent", function(self, event, arg1)
         if db then OnLootRoll(arg1) end
     elseif event == "CANCEL_LOOT_ROLL" then
         QueueRollRefresh()
+    elseif event == "BANKFRAME_OPENED" then
+        bankOpen = true
+        if db then QueueScan(0.2) end
+    elseif event == "BANKFRAME_CLOSED" then
+        bankOpen = false
+    elseif event == "PLAYERBANKSLOTS_CHANGED" then
+        if db then QueueScan() end
     end
 end)
