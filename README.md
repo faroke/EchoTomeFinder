@@ -12,6 +12,10 @@ It spots the **Echo Tomes** in your bags and in group loot rolls, and tells you 
 - **Your character first**: a tome wanted by the logged-in character gets a bright pulsing border and a star icon. A tome wanted only by your other characters gets a faint, still border, and only a chat line instead of the sound and on-screen warning.
 - **Per-character colors**: the border uses the color of the first character who wants the tome (the logged-in one first). A small number shows how many characters want it. Colors default to class colors and can be changed.
 - **Tooltip**: hovering a tome lists every character who wants it and the matching builds.
+- **Window and minimap button**: click the book icon on the minimap (drag it to move it) to open a window with three tabs:
+  - **Tomes**: the tomes in your bags and who wants them (shift-click links one in chat);
+  - **Characters**: recorded characters, click a color square to change its color, or remove a character;
+  - **Options**: sound, chat messages, other characters, minimap button, language.
 - Tomes a character has **already learned** are not counted for that character.
 
 Builds come from the Echo Journal's **Loadouts** tab: server build slots (snapshots and wishlists) and the local loadout library.
@@ -27,7 +31,8 @@ Builds come from the Echo Journal's **Loadouts** tab: server build slots (snapsh
 
 | Command | Description |
 |---|---|
-| `/etf` | List the tomes in your bags and who wants them |
+| `/etf` | Open or close the window |
+| `/etf list` | List the tomes in your bags and who wants them in chat |
 | `/etf chars` | List recorded characters, their color and last update |
 | `/etf color <Name> <rrggbb>` | Set a character's color (`reset` restores the class color) |
 | `/etf forget <Name>` | Remove a character (e.g. a deleted one) |

@@ -22,6 +22,7 @@ local defaults = {
     sound = true,       -- play a sound when a wanted tome shows up
     allClasses = false, -- include local builds of other classes
     alts = true,        -- take other characters' builds into account
+    chat = true,        -- chat lines for wanted tomes
 }
 
 local db
@@ -369,7 +370,9 @@ end)
 -- Sound and on-screen warning only when the logged-in character wants the
 -- tome; for other characters a chat line is enough.
 local function Alert(title, link, echoId, wanters)
-    Print("|cff20ff20" .. title .. "|r " .. link .. " -> " .. DescribeWanters(wanters))
+    if db.chat then
+        Print("|cff20ff20" .. title .. "|r " .. link .. " -> " .. DescribeWanters(wanters))
+    end
     if wanters[1].key ~= myKey then return end
     if firstScanDone then
         local names = {}
@@ -460,7 +463,7 @@ local function ScanBags()
             local itemId = ItemIdFromLink(link)
             local wanters, echoId = WantersForItem(itemId)
             if wanters then
-                local _, count = GetContainerItemInfo(bag, slot)
+                local texture, count = GetContainerItemInfo(bag, slot)
                 local t = found[itemId]
                 if t then
                     t.count = t.count + (count or 1)
@@ -470,6 +473,7 @@ local function ScanBags()
                         link = link,
                         name = GetSpellInfo(echoId) or ("Echo " .. echoId),
                         count = count or 1,
+                        texture = texture,
                         wanters = wanters,
                     }
                 end
@@ -497,11 +501,12 @@ local function ScanBags()
         -- One sound / on-screen alert, but every tome gets a chat line
         if i == 1 then
             Alert(L("Wanted tome!"), t.link, t.echoId, t.wanters)
-        else
+        elseif db.chat then
             Print("|cff20ff20" .. L("Wanted tome!") .. "|r " .. DescribeTome(t))
         end
     end
     firstScanDone = true
+    if ns.OnDataChanged then ns.OnDataChanged() end
 end
 
 -- Bag events come in bursts: scan once at the end
@@ -525,6 +530,26 @@ local function RefreshAll()
     ScanBags()
     RefreshRollGlows()
 end
+
+-- Used by the window (UI.lua)
+ns.L = function(s) return L(s) end
+ns.Core = {
+    GetDB = function() return db end,
+    GetMyKey = function() return myKey end,
+    GetTomes = function()
+        local list = {}
+        for _, t in pairs(tomesInBags) do table.insert(list, t) end
+        table.sort(list, function(a, b)
+            if (#a.wanters > 0) ~= (#b.wanters > 0) then return #a.wanters > 0 end
+            return a.name < b.name
+        end)
+        return list
+    end,
+    CharColor = function(key) return CharColor(key) end,
+    Colorize = function(key, text) return Colorize(key, text) end,
+    RefreshAll = function() RefreshAll() end,
+    SaveSnapshot = function() SaveSnapshot() end,
+}
 
 -- ── Tooltip ──────────────────────────────────────────────────────────────────
 
@@ -628,7 +653,8 @@ local function ListChars()
 end
 
 local function PrintHelp()
-    Print(L("/etf: list tomes in your bags and who wants them"))
+    Print(L("/etf: open the window"))
+    Print(L("/etf list: list tomes in your bags and who wants them"))
     Print(L("/etf chars: list recorded characters and their color"))
     Print(L("/etf color <Name> <rrggbb|reset>: change a character's color"))
     Print(L("/etf forget <Name>: remove a character"))
@@ -653,7 +679,9 @@ SlashCmdList["ECHOTOMEFINDER"] = function(msg)
     cmd = cmd:lower()
     cmd = ALIASES[cmd] or cmd
 
-    if cmd == "" or cmd == "list" then
+    if cmd == "" then
+        if ns.ToggleWindow then ns.ToggleWindow() else ListTomes() end
+    elseif cmd == "list" then
         ListTomes()
     elseif cmd == "builds" then
         ListBuilds()
@@ -733,7 +761,9 @@ f:SetScript("OnEvent", function(self, event, arg1)
         end
         db.chars = db.chars or {}
         db.colors = db.colors or {}
+        db.minimap = db.minimap or { angle = 200, hide = false }
         myKey = CharKey()
+        if ns.OnLoaded then ns.OnLoaded() end
 
         GameTooltip:HookScript("OnTooltipSetItem", AddTooltipLines)
         ItemRefTooltip:HookScript("OnTooltipSetItem", AddTooltipLines)

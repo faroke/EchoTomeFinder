@@ -3,7 +3,38 @@ local _, ns = ...
 -- English is the default; French can be picked with /etf lang fr.
 -- Keys are the English strings, so a missing translation falls back to English.
 ns.Locales = {
+    -- Only the long texts referenced by a short key need an English entry
+    en = {
+        ["legend"] = "Bags and loot rolls:\n"
+            .. "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_1:12|t bright pulsing border = wanted by this character\n"
+            .. "Faint still border = wanted only by your other characters\n"
+            .. "Number in the corner = how many characters want it\n"
+            .. "Border color = color of the first character who wants it",
+    },
     fr = {
+        ["legend"] = "Sacs et jets de loot :\n"
+            .. "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_1:12|t bordure vive qui clignote = voulu par ce personnage\n"
+            .. "Bordure pale et fixe = voulu seulement par vos autres personnages\n"
+            .. "Chiffre dans le coin = nombre de personnages qui le veulent\n"
+            .. "Couleur de la bordure = couleur du premier personnage interesse",
+        ["Tomes"] = "Tomes",
+        ["Characters"] = "Personnages",
+        ["Options"] = "Options",
+        ["Click to change the color"] = "Cliquer pour changer la couleur",
+        ["Reset to class color"] = "Revenir a la couleur de classe",
+        ["Forget %s?"] = "Oublier %s ?",
+        ["%d build(s), %s"] = "%d build(s), %s",
+        ["Language"] = "Langue",
+        ["Alert sound"] = "Son d'alerte",
+        ["Chat messages"] = "Messages dans le chat",
+        ["Include my other characters"] = "Tenir compte de mes autres personnages",
+        ["Include local loadouts of other classes"] = "Inclure les builds locaux des autres classes",
+        ["Show minimap button"] = "Afficher le bouton de la minimap",
+        ["Left click: open the window"] = "Clic gauche : ouvrir la fenetre",
+        ["Right click: options"] = "Clic droit : options",
+        ["Drag: move this button"] = "Glisser : deplacer ce bouton",
+        ["/etf: open the window"] = "/etf : ouvre la fenetre",
+        ["/etf list: list tomes in your bags and who wants them"] = "/etf list : liste les tomes en sac et qui les cherche",
         ["Wanted tome!"] = "Tome recherche !",
         ["Wanted tome in a loot roll!"] = "Tome recherche en jet de loot !",
         ["no character"] = "aucun personnage",
@@ -38,7 +69,6 @@ ns.Locales = {
         ["local builds of other classes excluded."] = "builds locaux des autres classes exclus.",
         ["language: English."] = "langue : anglais.",
         ["language: French."] = "langue : francais.",
-        ["/etf: list tomes in your bags and who wants them"] = "/etf : liste les tomes en sac et qui les cherche",
         ["/etf chars: list recorded characters and their color"] = "/etf chars : liste les personnages enregistres et leur couleur",
         ["/etf color <Name> <rrggbb|reset>: change a character's color"] = "/etf color <Nom> <rrggbb|reset> : change la couleur d'un personnage",
         ["/etf forget <Name>: remove a character"] = "/etf forget <Nom> : supprime un personnage",
