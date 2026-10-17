@@ -23,8 +23,8 @@ Builds come from the Echo Journal's **Loadouts** tab. By default only your saved
 
 ## Installation
 
-1. Download the repository (green **Code** button, then **Download ZIP**), or clone it.
-2. Put the folder in `Interface/AddOns/` of your Ebonhold client and make sure it is named `EchoTomeFinder`.
+1. Download the zip for your language from the [Releases](https://github.com/faroke/EchoTomeFinder/releases) page: `EchoTomeFinder-<version>-en.zip` (English) or `EchoTomeFinder-<version>-fr.zip` (French). You can switch language later with `/etf lang`.
+2. Extract it into `Interface/AddOns/` of your Ebonhold client, so you get `Interface/AddOns/EchoTomeFinder/`.
 3. Restart the game and enable **EchoTomeFinder** in the AddOns list.
 4. Log in once on each character you want to track, so its builds and bags get recorded, and open its bank once so the bank is recorded too.
 
@@ -51,6 +51,14 @@ Builds come from the Echo Journal's **Loadouts** tab. By default only your saved
 On Ebonhold, an Echo Tome item ID is the unlocked echo's spell ID plus 100000. The addon reads the echo data and the saved builds from the official `ProjectEbonhold` addon that ships with the client, and matches build echoes by spell ID or by name (the same echo can have several spell IDs, one per quality).
 
 Settings and recorded characters are stored account-wide in `EchoTomeFinderDB`.
+
+## Building
+
+```
+python build.py
+```
+
+Creates one zip per language in `dist/`. The builds only differ by their default language and the description shown in the AddOns list.
 
 ## License
 

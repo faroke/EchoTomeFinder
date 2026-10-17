@@ -1,5 +1,9 @@
 local _, ns = ...
 
+-- Default language of this build; nil = pick from the game client.
+-- build.py sets it in the per-language zips.
+ns.DefaultLanguage = nil
+
 -- English is the default; French can be picked with /etf lang fr.
 -- Keys are the English strings, so a missing translation falls back to English.
 ns.Locales = {
